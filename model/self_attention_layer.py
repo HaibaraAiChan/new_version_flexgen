@@ -60,6 +60,35 @@ class SelfAttention:
         weights = init_weight_list(weight_specs, self.policy, self.env)
         weight_home.store(weights)
 
+    def init_weight_mp(self, weight_home, path, m):
+        h, dtype = (self.config.input_dim, self.config.dtype)
+        path = os.path.join(os.path.join(path, f"decoder.layers.{self.layer_id}.self_attn"))
+        weight_specs = [
+            # w_q
+            ((h, h), dtype, path + ".q_proj.weight"),
+            # b_q
+            ((h,), dtype, path + ".q_proj.bias"),
+            # w_k
+            ((h, h), dtype, path + ".k_proj.weight"),
+            # b_k
+            ((h,), dtype, path + ".k_proj.bias"),
+            # w_v
+            ((h, h), dtype, path + ".v_proj.weight"),
+            # b_v
+            ((h,), dtype, path + ".v_proj.bias"),
+            # w_out
+            ((h, h), dtype, path + ".out_proj.weight"),
+            # b_out
+            ((h,), dtype, path + ".out_proj.bias"),
+            # w_ln
+            ((h,), dtype, path + "_layer_norm.weight"),
+            # b_ln
+            ((h,), dtype, path + "_layer_norm.bias"),
+        ]
+        weights = init_weight_list_mp(weight_specs, self.policy, self.env, m)
+        weight_home.store(weights, m)
+
+
     def load_weight(self, weight_home, weight_read_buf, k):
         w_q, b_q, w_k, b_k, w_v, b_v, w_out, b_out, w_ln, b_ln = weight_home.val
         if k == 0:

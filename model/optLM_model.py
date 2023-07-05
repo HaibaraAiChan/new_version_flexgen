@@ -348,7 +348,8 @@ class OptLM:
         # Intermediate tensors
         # The following buffers store values used
         # for the i-th token, j-th layer, k-th gpu batch.
-        num_layers, num_gpu_batches = self.num_layers, self.policy.num_gpu_batches
+        # num_layers, num_gpu_batches = self.num_layers, self.policy.num_gpu_batches
+        num_layers, num_gpu_batches = 1, self.policy.num_gpu_batches
         for j in range(num_layers):
             for k in range(num_gpu_batches):
                 self.cache_home[j][k].clear()
