@@ -1,9 +1,9 @@
-from self_attention_layer import SelfAttention
-from MLP_layer import MLP
-from transformer_layer import TransformerLayer
-from input_layer import InputEmbed
-from output_layer import OutputEmbed
+from parallel_attention import SelfAttention
+from parallel_MLP import MLP
+from parallel_transformer_layer import ParallelTransformerLayer
 
+from parallel_output import OutputEmbed
+from parallel_input import InputEmbed
 from typing import Union, List, Optional
 import time
 import os
@@ -12,16 +12,20 @@ import numpy as np
 from tqdm import tqdm
 
 import sys
-sys.path.insert(0,'/home/cc/FlexGen/new_flexgen/flexgen_additional')
+# sys.path.insert(0,'/home/cc/FlexGen/new_flexgen/flexgen_additional')
+sys.path.insert(0,'../flexgen_additional')
 from compression import CompressionConfig
 from opt_config import OptConfig, get_opt_config, download_opt_weights
 from flexgen_utils import Policy, ExecutionEnv,ValueHolder, array_2d, array_1d, array_3d, Task
 from timers import timers
 
+# sys.path.insert(0,'../model')
+# from input_layer import InputEmbed
+
 DUMMY_WEIGHT = "_DUMMY_"  # Use dummy weights for benchmark purposes
 
 
-class OptLM:
+class OptLM_MP:
     def __init__(self,
                  config: Union[str, OptConfig],
                  env: ExecutionEnv,
@@ -35,7 +39,7 @@ class OptLM:
         self.policy = policy
         self.num_gpu_batches = policy.num_gpu_batches
         self.tensor_model_parallel_size = policy.tensor_model_parallel_size
-        self.name = "OptLM"
+        self.name = "OptLM_MP"
 
         layers = []
         layers.append(InputEmbed(self.config, self.env, self.policy))
@@ -81,8 +85,8 @@ class OptLM:
         self.task = None
         print('init all weights ')
         time_int = time.time()
-        self.init_all_weights()
-        # self.init_all_weights_mp()
+        # self.init_all_weights()
+        self.init_all_weights_mp()
         print('the time init all weights ',time.time()-time_int )
 
     def set_task(self, task):
@@ -102,7 +106,7 @@ class OptLM:
         self.layers[j].init_weight(self.weight_home[j], expanded_path)
 
 
-    def init_weight_mp(self, j, m):
+    def init_weight_mp(self, j, mp):
         expanded_path = os.path.abspath(os.path.expanduser(
             os.path.join(self.path, f"{self.config.name}-np")))
         check_path = os.path.join(expanded_path, "decoder.embed_positions.weight")
@@ -111,7 +115,7 @@ class OptLM:
             print(' download opt weights from hugging face---------')
             download_opt_weights(self.config.name, self.path)
 
-        self.layers[j].init_weight_mp(self.weight_home[j],m, expanded_path)
+        self.layers[j].init_weight_mp(self.weight_home[j], expanded_path, mp)
 
 
     def load_weight(self, i, j, k, overlap=True):
@@ -285,10 +289,15 @@ class OptLM:
             self.init_weight(j)
             
     def init_all_weights_mp(self):
-        self.weight_home = array_2d(self.num_layers, self.tensor_model_parallel_size, ValueHolder)
-        for j in range(self.num_layers):
-            for m in range(self.tensor_model_parallel_size):
-                self.init_weight_mp(j,m)
+        if self.tensor_model_parallel_size == 1:
+            self.weight_home = array_1d(self.num_layers, ValueHolder)
+            for j in range(self.num_layers):
+                self.init_weight(j)
+        else: # self.tensor_model_parallel_size >1
+            self.weight_home = array_2d(self.num_layers, self.tensor_model_parallel_size, ValueHolder)
+            for j in range(self.num_layers):
+                for mp in range(self.tensor_model_parallel_size):
+                    self.init_weight_mp(j,mp)
             
     def delete_all_weights(self):
         for j in range(self.num_layers):

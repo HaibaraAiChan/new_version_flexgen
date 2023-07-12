@@ -2,7 +2,9 @@ import os
 import numpy as np
 import sys
 sys.path.insert(0,'/home/cc/FlexGen/new_flexgen/flexgen_additional')
-from flexgen_utils import init_weight_list,init_weight_list_mp
+from flexgen_utils import init_weight_list
+from flexgen_utils import init_weight_list_mp
+
 
 class InputEmbed:
     def __init__(self, config, env, policy):
@@ -33,20 +35,20 @@ class InputEmbed:
 
         weight_home.store(weights)
 
-    # tensor model parallel version, the m-th part weights initialization
-    def init_weight_mp(self, weight_home_current_layer, m, path):
+    # # tensor model parallel version, the m-th part weights initialization
+    # def init_weight_mp(self, weight_home_current_layer, m, path):
          
-        v, h, s, dtype = (self.config.vocab_size, self.config.input_dim,
-            self.config.max_seq_len, self.config.dtype)
-        path = os.path.join(path, "")
-        weight_specs = [
-            # w_token
-            ((v, h), dtype, path + "decoder.embed_tokens.weight"),
-            # w_pos
-            ((s + 2, h), dtype, path + "decoder.embed_positions.weight"),
-        ]
-        weights = init_weight_list_mp(weight_specs, m, self.policy, self.env)
-        weight_home_current_layer[m].store(weights)
+    #     v, h, s, dtype = (self.config.vocab_size, self.config.input_dim,
+    #         self.config.max_seq_len, self.config.dtype)
+    #     path = os.path.join(path, "")
+    #     weight_specs = [
+    #         # w_token
+    #         ((v, h), dtype, path + "decoder.embed_tokens.weight"),
+    #         # w_pos
+    #         ((s + 2, h), dtype, path + "decoder.embed_positions.weight"),
+    #     ]
+    #     weights = init_weight_list_mp(weight_specs, m, self.policy, self.env)
+    #     weight_home_current_layer[m].store(weights)
 
     def load_weight(self, weight_home, weight_read_buf, k):
         w_token, w_pos = weight_home.val

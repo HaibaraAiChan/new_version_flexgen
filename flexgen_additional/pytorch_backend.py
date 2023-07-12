@@ -117,6 +117,23 @@ class TorchTensor:
             self.device.delete(self)
         self.device = self.data = None
 
+    def load_from_np_mp(self, np_array, mp, world_size):
+        if self.device.device_type == DeviceType.DISK:
+            with open(self.data, "wb") as fout:
+                np.save(fout, np_array)
+        else:
+            if self.device.device_type == DeviceType.COMPRESSED:
+                tmp = torch.from_numpy(np_array)
+                tmp = global_cpu_device.compressed_device.compress(tmp, self.data[2])
+                general_copy(self, None, tmp, None)
+            else:
+                # self.data.copy_(torch.from_numpy(np_array))
+                if np_array.ndim == 1:
+                    np_array_list = np.split(np_array, world_size)
+                elif np_array.ndim == 2:
+                    np_array_list = np.split(np_array, world_size, axis=1)
+                self.data.copy_(torch.from_numpy(np_array_list[mp]))
+                
     def load_from_np(self, np_array):
         if self.device.device_type == DeviceType.DISK:
             with open(self.data, "wb") as fout:
@@ -134,6 +151,12 @@ class TorchTensor:
             shutil.copy(filename, self.data)
         else:
             self.load_from_np(np.load(filename))
+        
+    def load_from_np_file_mp(self, filename, mp, world_size):
+        if self.device.device_type == DeviceType.DISK:
+            shutil.copy(filename, self.data)
+        else:
+            self.load_from_np_mp(np.load(filename), mp, world_size)
 
     def copy(self, dst, src_indices=None):
         if src_indices:
@@ -202,7 +225,7 @@ class TorchDevice:
         
         return TorchTensor.create_from_torch(data, self, name=name)
     
-    def allocate_mp(self, shape, dtype, m, pin_memory=None, name=None):
+    def allocate_mp(self, shape, dtype, mp, pin_memory=None, name=None):
         if self.device_type == DeviceType.CPU:
             pin_memory = True if pin_memory is None else pin_memory
         else:

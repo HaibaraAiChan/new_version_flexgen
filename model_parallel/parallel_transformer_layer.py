@@ -25,7 +25,7 @@ sys.path.insert(0,'../mpu/')
 from global_vars import get_timers, get_args, get_global_memory_buffer
 from layers import ColumnParallelLinear, RowParallelLinear
 from initialize import get_tensor_model_parallel_world_size, get_tensor_model_parallel_rank, get_pipeline_model_parallel_rank, get_pipeline_model_parallel_world_size, get_virtual_pipeline_model_parallel_rank
-from iniitalize import get_num_layers
+from initialize import get_num_layers
 from utils import divide, split_tensor_along_last_dim
 from mpu_random import checkpoint, get_cuda_rng_tracker, make_viewless_tensor
 

@@ -408,7 +408,7 @@ def init_weight_list(weight_specs, policy, env):
     return ret
 
 # tensor model parallel version
-def init_weight_list_mp(weight_specs, m, policy, env):
+def init_weight_list_mp(weight_specs, policy, env, mp, world_size):
     dev_percents = [policy.w_disk_percent, policy.w_cpu_percent, policy.w_gpu_percent]
     dev_choices = [env.disk, env.cpu, env.gpu]
 
@@ -420,7 +420,16 @@ def init_weight_list_mp(weight_specs, m, policy, env):
         mid_percent = (sizes_cumsum[i] - sizes[i] / 2) / sizes_cumsum[-1]
         home = get_choice(mid_percent * 100, dev_percents, dev_choices)
         shape, dtype, filename = weight_specs[i]
-
+        print(shape)
+        print(type(shape))
+        if len(shape)<2:
+            shape = (math.ceil(shape[0]/world_size),)
+        # shape is a tuple
+        elif len(shape) == 2:
+            split_column = math.ceil(shape[1]/world_size)
+            shape = (shape[0],) + (split_column,)
+        
+        
         if len(shape) < 2:
             pin_memory = True
             compress = False
@@ -429,14 +438,16 @@ def init_weight_list_mp(weight_specs, m, policy, env):
             compress = policy.compress_weight
 
         if not compress:
+            # mp = 0,1,2, ... ,parallel size-1
+            # if mp > 1:
+            weight = home.allocate_mp(shape, dtype, mp, pin_memory=pin_memory)
             
-            if m >=0:
-                weight = home.allocate_mp(shape, dtype, m, pin_memory=pin_memory)
-            else:
-                weight = home.allocate(shape, dtype, pin_memory=pin_memory)
+            # else:
+            #     weight = home.allocate(shape, dtype, pin_memory=pin_memory)
                 
             if DUMMY_WEIGHT not in filename:
-                weight.load_from_np_file(weight_specs[i][2])
+                # weight.load_from_np_file(weight_specs[i][2], offset, num_column)
+                weight.load_from_np_file_mp(weight_specs[i][2], mp, world_size)
             else:
                 weight.load_from_np(np.ones(shape, dtype))
                 #weight.load_from_np(np.random.rand(*shape).astype(dtype))

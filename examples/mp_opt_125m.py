@@ -30,16 +30,21 @@ from flexgen_utils import (Task, ExecutionEnv, GB, T, ValueHolder,
     read_benchmark_log)
 sys.path.insert(0,'../model')
 # sys.path.insert(0,'/home/cc/FlexGen/new_flexgen/model')
+
 from self_attention_layer import SelfAttention
 from MLP_layer import MLP
 from transformer_layer import TransformerLayer
-from input_layer import InputEmbed
+from optLM_model import OptLM
 from output_layer import OutputEmbed
 from flexgen_utils import  Policy
-from optLM_model import OptLM
 
 sys.path.insert(0,'../model_parallel')
+sys.path.insert(0,'/home/cc/FlexGen/new_flexgen/model_parallel')
 from optLM_model_mp import OptLM_MP
+
+
+
+
 fix_recursive_import()
 
 DUMMY_WEIGHT = "_DUMMY_"  # Use dummy weights for benchmark purposes
@@ -210,7 +215,7 @@ def add_parser_arguments(parser):
         choices=["fewer_batch", "breakdown"])
     parser.add_argument("--gpu-batch-size", type=int, default=2)
     parser.add_argument("--num-gpu-batches", type=int, default=2)
-    parser.add_argument("--tensor-model-parallel-size", type=int, default=1) # we added 
+    parser.add_argument("--tensor-model-parallel-size", type=int, default=2) # we added 
     parser.add_argument("--percent", nargs="+", type=int,
         default=[100, 0, 100, 0, 100, 0],
         help="Six numbers. They are "
