@@ -42,6 +42,14 @@ sys.path.insert(0,'../model_parallel')
 from optLM_model_mp import OptLM_MP
 fix_recursive_import()
 
+import torch
+import torch
+torch.distributed.init_process_group(backend='nccl')
+
+
+
+
+
 DUMMY_WEIGHT = "_DUMMY_"  # Use dummy weights for benchmark purposes
 
 
@@ -246,11 +254,21 @@ def add_parser_arguments(parser):
         const=True, default=True)
 
 
+
+
+def get_tensor_model_parallel_src_rank():
+    """Calculate the global rank corresponding to the first local rank
+    in the tensor model parallel group."""
+    global_rank = torch.distributed.get_rank()
+    local_world_size = get_tensor_model_parallel_world_size()
+    return (global_rank // local_world_size) * local_world_size
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     add_parser_arguments(parser)
     args = parser.parse_args()
 
     assert len(args.percent) == 6
-
+    print('get_tensor_model_parallel_src_rank() ', get_tensor_model_parallel_src_rank())
+    
     run_flexgen(args)

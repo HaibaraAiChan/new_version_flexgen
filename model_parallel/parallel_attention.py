@@ -356,26 +356,40 @@ class SelfAttention:
         weight_specs = [
             # w_q
             ((h, h), dtype, path + ".q_proj.weight"),
-            # b_q
-            ((h,), dtype, path + ".q_proj.bias"),
+            # # b_q
+            # ((h,), dtype, path + ".q_proj.bias"),
             # w_k
             ((h, h), dtype, path + ".k_proj.weight"),
-            # b_k
-            ((h,), dtype, path + ".k_proj.bias"),
+            # # b_k
+            # ((h,), dtype, path + ".k_proj.bias"),
             # w_v
             ((h, h), dtype, path + ".v_proj.weight"),
-            # b_v
-            ((h,), dtype, path + ".v_proj.bias"),
+            # # b_v
+            # ((h,), dtype, path + ".v_proj.bias"),
             # w_out
             ((h, h), dtype, path + ".out_proj.weight"),
-            # b_out
-            ((h,), dtype, path + ".out_proj.bias"),
+            # # b_out
+            # ((h,), dtype, path + ".out_proj.bias"),
             # w_ln
             ((h,), dtype, path + "_layer_norm.weight"),
+            # # b_ln
+            # ((h,), dtype, path + "_layer_norm.bias"),
+        ]
+        bias_specs = [
+            # b_q
+            ((h,), dtype, path + ".q_proj.bias"),
+            # b_k
+            ((h,), dtype, path + ".k_proj.bias"),
+             # b_v
+            ((h,), dtype, path + ".v_proj.bias"),
+            # b_out
+            ((h,), dtype, path + ".out_proj.bias"),
             # b_ln
             ((h,), dtype, path + "_layer_norm.bias"),
         ]
-        weights = init_weight_list_mp(weight_specs, self.policy, self.env, mp, self.world_size)
+        
+        weights, bias = init_weight_list_mp(weight_specs,bias_specs, self.policy, self.env)
+        
         weight_home.store(weights, mp)
 
 

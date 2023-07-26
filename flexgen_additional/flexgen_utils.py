@@ -408,7 +408,7 @@ def init_weight_list(weight_specs, policy, env):
     return ret
 
 # tensor model parallel version
-def init_weight_list_mp(weight_specs, policy, env, mp, world_size):
+def init_weight_list_mp(weight_specs, bias_specs, policy, env, mp, world_size):
     dev_percents = [policy.w_disk_percent, policy.w_cpu_percent, policy.w_gpu_percent]
     dev_choices = [env.disk, env.cpu, env.gpu]
 
@@ -438,12 +438,8 @@ def init_weight_list_mp(weight_specs, policy, env, mp, world_size):
             compress = policy.compress_weight
 
         if not compress:
-            # mp = 0,1,2, ... ,parallel size-1
-            # if mp > 1:
-            weight = home.allocate_mp(shape, dtype, mp, pin_memory=pin_memory)
             
-            # else:
-            #     weight = home.allocate(shape, dtype, pin_memory=pin_memory)
+            weight = home.allocate(shape, dtype, pin_memory=pin_memory)
                 
             if DUMMY_WEIGHT not in filename:
                 # weight.load_from_np_file(weight_specs[i][2], offset, num_column)
